@@ -1,0 +1,9 @@
+this repo is for thundering-herd-problem understanding.
+
+herd.c is multi-process without epoll, while herd_epoll.c add an epoll.
+
+1.build: g++ -o herd herd.c/herd_epoll.c
+2. ./herd port (this will a server listenning on 0.0.0.0:port)
+ps. strace -f ./herd port,this will show all process awake in epoll_wait while no epoll version will has not.
+
+TODO. what's the reason behind it???
