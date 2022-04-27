@@ -1,32 +1,61 @@
 #include<unistd.h>
 #include<string.h>
+
 #include "Server.h"
+#include "EventDispatcher.h"
+#include "Connection.h"
 
 #include<iostream>
 using namespace std;
 
 Server::Server(uint32_t port,EventDispatcher* p)
-:_port(port)
-,_dispatcher(p){
+:_stop(false)
+,_port(port)
+,_dispatcher(p)
+,_acceptChan(new Channel()){
+    bzero(&_serverAddr,sizeof(_serverAddr));
+    initServer("",port);
+}
+
+Server::Server(uint32_t port)
+:_stop(false)
+,_port(port)
+,_acceptChan(new Channel()){
     bzero(&_serverAddr,sizeof(_serverAddr));
     initServer("",port);
 }
 
 Server::Server(const std::string& ip,uint32_t port,EventDispatcher* p)
-:_port(port)
-,_dispatcher(p){
+:_stop(false)
+,_port(port)
+,_dispatcher(p)
+,_acceptChan(new Channel()){
     bzero(&_serverAddr,sizeof(_serverAddr));
     initServer(ip,port);
 }
 
+Server::~Server(){
+    if(_acceptChan){
+        delete _acceptChan;
+        _acceptChan = nullptr;
+    }
+}
+
 void 
 Server::initServer(const string& ip,uint32 port){
-    _listenFd = socket(AF_INET,SOCK_STREAM,0);
-    if(_listenFd < 0){
+    uint32 fd = socket(AF_INET,SOCK_STREAM,0);
+    if(fd < 0){
         cout<<"create listenfd failed."<<endl;
         return;
     }
-
+    
+    int val =1;
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(val))<0) {
+        cout<<"set reuse failed"<<endl;
+    }
+    cout<<"init acceptChan addr : "<<_acceptChan<<endl;
+    _acceptChan->SetFd(fd);
+    _acceptChan->SetAccept(std::bind(&Server::Accept,this));
     _serverAddr.sin_family = AF_INET;
     _serverAddr.sin_port = htons(port);
     if(ip.empty()){
@@ -39,18 +68,48 @@ Server::initServer(const string& ip,uint32 port){
         }
     }
 
-    if(bind(_listenFd,(struct sockaddr*)&_serverAddr,sizeof(_serverAddr)) < 0){
+    if(bind(fd,(struct sockaddr*)&_serverAddr,sizeof(_serverAddr)) < 0){
         cout<<"bind in port "<<port<<" failed!"<<endl;
-        return;
+        throw "bind failed!!!";
     }
-    if(listen(_listenFd,1024) < 0) {
+    if(listen(fd,1024) < 0) {
         cout<<"listen in port "<<_port<<" failed."<<endl;
-        return;
+        throw "listend failed!!!";
     }
     return;
 }
 
+void 
+Server::Accept(){
+    struct sockaddr_in cliaddr;
+    socklen_t clilen = sizeof(cliaddr);
+    uint32 connfd = accept(_acceptChan->Fd(),(struct sockaddr *)&cliaddr,&clilen);
+    if(connfd <= 0){
+        cout<<"accept socket error: errno "<<strerror(errno)<<" "<<errno<<endl;
+        return;
+    }
+
+    //auto newConn = std::make_shared<Connection>(connfd,_dispatcher);
+    shared_ptr<Connection> newConn(new Connection(connfd,_dispatcher));
+    newConn->SetMsgCb(_msgcb);
+    _dispatcher->AddEvent(newConn->Chan(),EventNew);
+    _conns.insert({connfd,newConn});
+}
+
 void
-Server::NewConn(){
+Server::CloseConn(Connection* conn){
+    _dispatcher->UpdateEvent(conn->Chan(),EventClose);
+}
+
+void
+Server::Start(){
+    //add listenfd to epoll
+    //cout<<"accept chan addr: "<<_acceptChan<<endl;
+    _dispatcher->AddEvent(_acceptChan,EventNew);
+
+    //start io detection
+    while(!_stop){
+        _dispatcher->Run();
+    }
     return;
 }

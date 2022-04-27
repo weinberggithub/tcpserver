@@ -27,8 +27,8 @@ public:
     void Unlock();
 
 private:
-    volatile atomic_int*    _locker;
-    volatile atomic_int*    _wait;
+    volatile std::atomic_int*    _locker;
+    volatile std::atomic_int*    _wait;
     //not impl
     semaphore               _sem;
 };

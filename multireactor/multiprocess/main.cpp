@@ -2,6 +2,14 @@
 
 #include "Server.h"
 #include "EventDispatcher.h"
+#include "Connection.h"
+using namespace std;
+
+
+void OnMessage(const ConnectionPtr& conn){
+    auto in = conn->InBUff();
+    conn->Send(in);
+}
 
 int main(int argc,char** argv){
     if(argc != 2){
@@ -13,11 +21,12 @@ int main(int argc,char** argv){
         cout<<"port invalid."<<endl;
         return -1;
     }
-    EventDispatcher dispatcher;
-    Server s(port,&dispatcher);
+    
+    Server s(port);
+    s.SetOnMsg(std::bind(&OnMessage,_1));
     //start fork，one process per loop
     int childs[5]  = {0};
-    for(int i = 0;i < 5;++i){
+    for(int i = 0;i < 0;++i){
         int pid = fork();
         if(pid == -1){
             exit(-1);
@@ -28,7 +37,8 @@ int main(int argc,char** argv){
             childs[i] = pid;
         }
     }
-    // reactor_set_events(listenfd,bind(&accept_callback,_1),event_accept);
-    // event_loop();
+    EventDispatcher dispatcher;
+    s.SetDispatcher(&dispatcher);
+    s.Start();
     return 0;
 }

@@ -7,7 +7,8 @@
 #include<functional>
 #include<memory>
 
-using namespace std;
+#include "Poller.h"
+
 using namespace std::placeholders;
 using ReactorCallback=std::function<void(int)>;
 
@@ -24,19 +25,21 @@ class Poller;
 class EventDispatcher{
 public:
     EventDispatcher();
-    void SetAcceptCallBack(ReactorCallback cb){_acceptcb = cb;}
-    void SetReadCallBack(ReactorCallback cb){_readcb = cb;}
-    void SetWriteCallBack(ReactorCallback cb){_writecb = cb;}
+    void SetAcceptCallBack(ReactorCallback cb){ _acceptcb = cb; }
+    void SetReadCallBack(ReactorCallback cb){ _readcb = cb; }
+    void SetWriteCallBack(ReactorCallback cb){ _writecb = cb;}
 
     //void SetEvent();
+    void AddEvent(Channel *chan,uint32 eType);
+    void UpdateEvent(Channel *chan,uint32 eType);
     void Run();
     
 private:
-    bool                _stop;
-    unique_ptr<Poller> _poller;
-    ReactorCallback     _acceptcb;
-    ReactorCallback     _readcb;
-    ReactorCallback     _writecb;
+    bool                     _stop;
+    std::unique_ptr<Poller>  _poller;
+    ReactorCallback          _acceptcb;
+    ReactorCallback          _readcb;
+    ReactorCallback          _writecb;
 };
 
 

@@ -7,7 +7,7 @@ shmtx::shmtx(){
     if(id == -1){
         throw "shmget failed.";
     }
-    _locker = (uint32*)shmat(id, NULL, 0);
+    _locker = (std::atomic_int*)shmat(id, NULL, 0);
     if(_locker == (void*) -1){
         throw "shmat failed.";
     }
@@ -25,11 +25,11 @@ void
 shmtx::Lock(){
     while(1){
         int expected = 0;
-        if(*_locker == 0 && atomic_compare_exchange_strong(_locker,&expected,1)){
+        if(*_locker == 0 && std::atomic_compare_exchange_strong(_locker,&expected,1)){
             return;
         }
 
-        atomic_fetch_add(_wait,1);
+        std::atomic_fetch_add(_wait,1);
         _sem.Wait();
         //cout<<"awoke"<<endl;
     }
@@ -40,17 +40,17 @@ shmtx::Lock(){
 bool 
 shmtx::TryLock(){
    int expected = 0;
-   return (*_locker == 0 && atomic_compare_exchange_strong(_locker,&expected,1));
+   return (*_locker == 0 && std::atomic_compare_exchange_strong(_locker,&expected,1));
 }
 
 void 
 shmtx::Unlock(){
     int expected = 0;
-     if (atomic_compare_exchange_strong(_locker,&expected,0)) {
+     if (std::atomic_compare_exchange_strong(_locker,&expected,0)) {
         for (;;){
-            auto wait = *_wait;
+            auto wait = (int)*_wait;
             if(wait <= 0) return;
-            if(atomic_compare_exchange_strong(_wait,&wait,wait - 1)){
+            if(std::atomic_compare_exchange_strong(_wait,&wait,wait - 1)){
                 break;
             }
         }
