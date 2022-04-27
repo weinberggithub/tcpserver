@@ -1,2 +1,2 @@
 # tcpserver
-this repo is for learnning purpose.
+this repo is for learning purpose.
