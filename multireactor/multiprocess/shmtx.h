@@ -24,6 +24,7 @@ public:
 
     void Lock();
     bool TryLock();
+    bool LockWithTimeout(uint32 timeout);
     void Unlock();
 
 private:

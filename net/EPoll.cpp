@@ -17,8 +17,6 @@ EPoll::EPoll()
         throw "epoll_create failed.";
     }
     _events.resize(_eventsSize);
-    //default
-    _timeout = -1;
 }
 
 EPoll::~EPoll(){
@@ -27,16 +25,11 @@ EPoll::~EPoll(){
 
 int pcnt = 0;
 void 
-EPoll::EventLoop() {
-    //set an epoll_wait timeout.  ms.
-    int nready = epoll_wait(_epfd,&*_events.begin(),_eventsSize,_timeout);
+EPoll::EventLoop(uint32 listenfd) {
+    // blocking
+    int nready = epoll_wait(_epfd,&*_events.begin(),_eventsSize,-1);
     if(nready == -1){
         //errors
-        return;
-    }
-
-    if(nready == 0){
-        cout<<"timeout wakeup...."<<endl;
         return;
     }
 

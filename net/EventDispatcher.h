@@ -35,6 +35,7 @@ public:
     void Run();
     
 private:
+    bool                     _stop;
     std::unique_ptr<Poller>  _poller;
     ReactorCallback          _acceptcb;
     ReactorCallback          _readcb;

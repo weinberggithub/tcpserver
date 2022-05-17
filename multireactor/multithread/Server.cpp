@@ -4,14 +4,12 @@
 #include "Server.h"
 #include "EventDispatcher.h"
 #include "Connection.h"
-#include "shmtx.h"
 
 #include<iostream>
 using namespace std;
 
 Server::Server(uint32_t port,EventDispatcher* p)
-:_isAccept(false)
-,_stop(false)
+:_stop(false)
 ,_port(port)
 ,_dispatcher(p)
 ,_acceptChan(new Channel()){
@@ -20,8 +18,7 @@ Server::Server(uint32_t port,EventDispatcher* p)
 }
 
 Server::Server(uint32_t port)
-:_isAccept(false)
-,_stop(false)
+:_stop(false)
 ,_port(port)
 ,_acceptChan(new Channel()){
     bzero(&_serverAddr,sizeof(_serverAddr));
@@ -29,8 +26,7 @@ Server::Server(uint32_t port)
 }
 
 Server::Server(const std::string& ip,uint32_t port,EventDispatcher* p)
-:_isAccept(false)
-,_stop(false)
+:_stop(false)
 ,_port(port)
 ,_dispatcher(p)
 ,_acceptChan(new Channel()){
@@ -100,29 +96,6 @@ Server::Accept(){
     _dispatcher->AddEvent(newConn->Chan(),EventNew);
     _conns.insert({connfd,newConn});
     //cout<<"accept socket new fd: "<<connfd<<"  pid:"<<getpid()<<endl;
-
-    DisableAccept();
-}
-
-bool 
-Server::EnableAccept(uint32 timeout){
-    if(!_shmLocker){return false;}
-    if(!_shmLocker->LockWithTimeout(5)){
-        return false;
-    }
-    _dispatcher->UpdateEvent(_acceptChan,EventNew);
-    return true;
-}
-
-void 
-Server::DisableAccept(){
-    if(!_shmLocker) return;
-    if(_isAccept){
-        _dispatcher->UpdateEvent(_acceptChan,EventDel);
-        _shmLocker->Unlock();
-    } 
-    _isAccept = false;
-    return;
 }
 
 void
@@ -133,15 +106,12 @@ Server::CloseConn(ConnectionPtr conn){
 void
 Server::Start(){
     //add listenfd to epoll
-    //_dispatcher->AddEvent(_acceptChan,EventNew);
+    //cout<<"accept chan addr: "<<_acceptChan<<endl;
+    _dispatcher->AddEvent(_acceptChan,EventNew);
 
-    //not use timer to awake epoll_wait,just set a timeout value.
     //start io detection
     while(!_stop){
-        _isAccept = EnableAccept(5);
-        //cout<<"server run "<<_isAccept<<endl;
         _dispatcher->Run();
-        DisableAccept();
     }
     return;
 }

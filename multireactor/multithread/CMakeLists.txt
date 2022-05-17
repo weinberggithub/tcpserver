@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(multipreactor C CXX)
+project(multitreactor C CXX)
 
 aux_source_directory(. SRC_DIR)
 

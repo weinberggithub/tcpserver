@@ -12,7 +12,7 @@ public:
     EPoll();
     ~EPoll();
 
-    void EventLoop() override;
+    void EventLoop(uint32 listenfd) override;
     void UpdateChannel(Channel* chan,uint32 eType) override;
 
 private:

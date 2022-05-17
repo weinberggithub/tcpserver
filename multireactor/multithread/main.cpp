@@ -29,21 +29,6 @@ int main(int argc,char** argv){
     
     Server s(port);
     s.SetOnMsg(std::bind(&OnMessage,_1));
-    shmtx locker;
-    //start fork，one process per loop
-    int childs[5]  = {0};
-    for(int i = 0;i < 3;++i){
-        int pid = fork();
-        if(pid == -1){
-            exit(-1);
-        }else if(0 == pid){
-            //ppid return in child.
-            break;
-        }else{
-            childs[i] = pid;
-        }
-    }
-    s.SetLocker(&locker);
     EventDispatcher dispatcher;
     s.SetDispatcher(&dispatcher);
     s.Start();

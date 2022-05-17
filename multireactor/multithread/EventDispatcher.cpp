@@ -6,16 +6,17 @@
 
 #include<iostream>
 EventDispatcher::EventDispatcher()
-:_poller(new EPoll())
+:_stop(false)
+,_poller(new EPoll())
 {
     //std::cout<<"epoll fd : "<<_poller->Fd()<<std::endl;
-    //set timeout for subprocesses awake to handle connections established.
-    _poller->SetTimeout(500);
 }
 
 void
 EventDispatcher::Run(){
-    _poller->EventLoop();
+    while(!_stop){
+        _poller->EventLoop(0);
+    }
 }
 
 

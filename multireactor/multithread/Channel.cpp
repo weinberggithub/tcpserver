@@ -41,7 +41,7 @@ Channel::EventProcess(uint32 event){
     {
         if (_readcb) {
             //TODO  为什么这个地方没有读取呢？偶现不读取是怎么回事情？
-            //cout<<"fd:  "<<_fd<<"  read pid: "<<getpid()<<endl;
+            cout<<"fd:  "<<_fd<<"  read pid: "<<getpid()<<endl;
             _readcb();
         }
         

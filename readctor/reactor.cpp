@@ -15,6 +15,7 @@
 
 using namespace std;
 using event_callback=std::function<void(int)>;
+using namespace std::placeholders;
 
 using buffer=unsigned char;
 
@@ -107,7 +108,7 @@ void accept_callback(int listenfd){
         return;
     }
     //cout<<"new connection"<<endl;
-    reactor_set_events(connfd,read_callback,event_read);
+    reactor_set_events(connfd,std::bind(&read_callback,_1),event_read);
 }
 
 void read_callback(int fd){
@@ -126,7 +127,7 @@ void read_callback(int fd){
         //cout<<"recv from "<<inet_ntoa(cliaddr.sin_addr)<<" : "<<buff<<endl;
         memcpy(r->events[fd].wbuff,r->events[fd].rbuff,ret);
         r->events[fd].wlen = ret;
-        reactor_set_events(fd,write_callback,event_write);
+        reactor_set_events(fd,std::bind(&write_callback,_1),event_write);
         //send(events[i].data.fd,buff,readn,0);
     }
 }
@@ -136,9 +137,9 @@ void write_callback(int fd){
     int buff_len = r->events[fd].wlen;
     int ret = send(fd,r->events[fd].wbuff,buff_len,0);
     if(ret < buff_len){
-        reactor_set_events(fd,write_callback,event_write);
+        reactor_set_events(fd,std::bind(&write_callback,_1),event_write);
     }else{
-        reactor_set_events(fd,read_callback,event_read);
+        reactor_set_events(fd,std::bind(&read_callback,_1),event_read);
     }
 }
 
@@ -217,7 +218,7 @@ int main(int argc,char** argv){
     }
     //start fork，one process per loop
     int childs[5]  = {0};
-    for(int i = 0;i < 5;++i){
+    for(int i = 0;i < 3;++i){
         int pid = fork();
         if(pid == -1){
             exit(-1);
